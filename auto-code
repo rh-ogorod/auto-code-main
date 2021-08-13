@@ -1,0 +1,41 @@
+#!/usr/bin/python3
+# Hey Emacs, this is -*- coding: utf-8; mode: python -*-
+
+import sys
+from pathlib import Path
+
+from aclib import autocode as ac
+
+if len(sys.argv) != 4:
+  print(
+    'auto-code: Incorrect arguments, correct example: '
+    '"auto-code fid hostData /path/to/auto-codded/file"'
+  )
+  exit()
+
+modelName = sys.argv[1]
+templateName = sys.argv[2]
+autoCoddedFilePath = Path(sys.argv[3]).resolve(True)
+
+defaultAutoCodeLocations = []
+
+sPath = Path(__file__).resolve(True)
+mainDefaultPath = sPath.parent
+userDefaultPath = mainDefaultPath.parent
+
+sys.path += (mainDefaultPath, userDefaultPath)
+defaultAutoCodeLocations += (mainDefaultPath, userDefaultPath)
+
+modelsLocations, templatesLocations = ac.findTemplatesAndModelsLocations(
+  autoCoddedFilePath.parents,
+  defaultAutoCodeLocations,
+)
+
+modelPath, templatePath = ac.findTemplateAndModelPaths(
+  modelName,
+  templateName,
+  modelsLocations,
+  templatesLocations,
+)
+
+ac.autoCode(modelPath, templatePath, autoCoddedFilePath)

@@ -1,0 +1,22 @@
+#!/usr/bin/python3
+# Hey Emacs, this is -*- coding: utf-8; mode: python -*-
+
+import json
+from pathlib import Path
+
+from aclib import package_json as pkg
+
+
+sParents = Path(__file__).resolve(True).parents
+
+mainPackageJsonPath = pkg.findDominatingPackageJson(sParents)
+
+worktrees = pkg.identifyWorktrees(mainPackageJsonPath)
+
+for worktreePackageJsonPath in worktrees:
+  version = pkg.getPackageJsonVersion(worktreePackageJsonPath)
+  workspacePackageJsonPaths = worktrees[worktreePackageJsonPath]
+  for workspacePackageJsonPath in workspacePackageJsonPaths:
+    pkg.setPackageJsonVersion(workspacePackageJsonPath, version)
+
+print(json.dumps(worktrees, indent=2))

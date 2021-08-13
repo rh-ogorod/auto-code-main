@@ -1,0 +1,171 @@
+#!/usr/bin/python3
+# Hey Emacs, this is -*- coding: utf-8; mode: python -*-
+
+import sys, os, io, re
+from subprocess import run, PIPE
+from os import path
+from pathlib import Path
+import importlib.util
+
+join = path.join
+
+
+def importConfigFile(parents):
+  configPath = None
+
+  for parent in parents:
+    configPath = parent / 'auto-code' / 'config.py'
+    if configPath.is_file() or configPath.is_symlink(): break
+
+  if not configPath:
+    raise RuntimeError('auto-code config not found.')
+
+  spec = importlib.util.spec_from_file_location('config', configPath)
+  config = importlib.util.module_from_spec(spec)
+  sys.modules['config'] = config
+  spec.loader.exec_module(config)
+
+  return config
+
+
+config = importConfigFile(Path(__file__).resolve(True).parents)
+
+autoCodeOpenSingleLineRegex = \
+  r'^(\s*)[^\s]+\s*/a/{\s*(i?auto-code)\s+([^\s]+)\s+([^\s]+)'
+
+autoCodeOpenMultiLineRegex = r'^(\s*)[^\s]+\s*/a/{$'
+autoCodeParamRegex = \
+  r'^(\s*)[^\s]+\s*/a/\$\s*(i?auto-code)\s+([^\s]+)\s+([^\s]+)'
+
+autoCodeCloseRegex = r'^(\s*)[^\s]+\s*/a/}'
+
+
+def autoCodeRecursively(directory):
+  for root, dirs, fileNames in os.walk(directory):
+    for fileName in fileNames:
+      if re.search(config.autoCodeFiles, fileName):
+        filePath = join(root, fileName)
+        filePathTmp = filePath + '.auto-code'
+        with io.StringIO() as fb:
+          with open(filePath, mode='r', encoding='utf8') as inpf:
+            fileChanged = False
+            indentationStrCurrent = None
+            autoCodeCommand = None
+            autoCodeCommandId = ''
+            lineNumber = 0
+            for line in inpf:
+              lineNumber += 1
+              try:
+                if not autoCodeCommandId:
+                  fb.write(line)
+                  openSingleLineMatch = None
+                  openMultiLineMatch = None
+                  paramMatch = None
+
+                  openSingleLineMatch = \
+                    re.match(autoCodeOpenSingleLineRegex, line)
+                  if not openSingleLineMatch:
+                    openMultiLineMatch = \
+                      re.match(autoCodeOpenMultiLineRegex, line)
+                  if not openSingleLineMatch and not openMultiLineMatch:
+                    paramMatch = re.match(autoCodeParamRegex, line)
+
+                  if paramMatch:
+                    indentationStr = paramMatch.group(1)
+                    generator = paramMatch.group(2)
+                    data = paramMatch.group(3)
+                    template = paramMatch.group(4)
+                    inOpenMultiLine = True
+
+                    if indentationStrCurrent:
+                      if indentationStrCurrent != indentationStr:
+                        raise RuntimeError(
+                          'auto-code group indentations do not match'
+                        )
+                    else: indentationStrCurrent = indentationStr
+
+                    autoCodeCommand = [
+                      join(config.generatorsPath, generator),
+                      data,
+                      template,
+                      filePath,
+                    ]
+
+                  if openMultiLineMatch:
+                    indentationStr = openMultiLineMatch.group(1)
+                    if indentationStrCurrent != indentationStr:
+                      raise RuntimeError(
+                        'auto-code group indentations do not match')
+
+                    if not inOpenMultiLine:
+                      raise RuntimeError(
+                        'Invalid auto-code multi-line open block.')
+                    autoCodeCommandId = ' '.join(autoCodeCommand)
+
+                  if not paramMatch and not openMultiLineMatch:
+                    inOpenMultiLine = False
+
+                  if openSingleLineMatch:
+                    indentationStr = openSingleLineMatch.group(1)
+                    generator = openSingleLineMatch.group(2)
+                    data = openSingleLineMatch.group(3)
+                    template = openSingleLineMatch.group(4)
+
+                    indentationStrCurrent = indentationStr
+
+                    autoCodeCommand = [
+                      join(config.generatorsPath, generator),
+                      data,
+                      template,
+                      filePath,
+                    ]
+
+                    autoCodeCommandId = ' '.join(autoCodeCommand)
+                else:
+                  closeSingleLineMatch = re.match(autoCodeCloseRegex, line)
+                  if closeSingleLineMatch:
+                    indentationStr = closeSingleLineMatch.group(1)
+                    if indentationStrCurrent != indentationStr:
+                      raise RuntimeError(
+                        'auto-code group indentations do not match')
+
+                    compProc = run(autoCodeCommand, stdout=PIPE)
+                    if compProc.returncode != 0: exit(compProc.returncode)
+                    # fb.write(compProc.stdout.decode('utf-8'))
+                    compProcLines = compProc.stdout.decode('utf-8').split('\n')
+                    for compProcLine in compProcLines[:-1]:
+                      if compProcLine:
+                        compProcLine = f'{indentationStr}{compProcLine}'
+                      fb.write(f'{compProcLine}\n')
+                    if compProcLines:
+                      compProcLine = compProcLines[-1]
+                      if compProcLine:
+                        compProcLine = f'{indentationStr}{compProcLine}'
+                      fb.write(compProcLine)
+                    fb.write(line)
+                    fileChanged = True
+                    indentationStrCurrent = None
+                    autoCodeCommand = None
+                    autoCodeCommandId = ''
+              except:
+                print(f'Error while processing:\n'
+                      f'  File: "{filePath}", line {lineNumber}\n'
+                      f'  Command: "{autoCodeCommandId}"',
+                      file=sys.stderr)
+                raise
+            if autoCodeCommandId:
+              print(f'Error while processing:\n'
+                    f'  File: "{filePath}", line {lineNumber}\n'
+                    f'  Command: "{autoCodeCommandId}"',
+                    file=sys.stderr)
+              raise RuntimeError('auto-code group "/a/{" not closed.')
+          if fileChanged:
+            with open(filePathTmp, mode='w', encoding='utf8') as outf:
+              outf.write(fb.getvalue())
+              outf.flush()
+            os.replace(filePathTmp, filePath)
+            print(filePath)
+
+
+for directory in config.autoCodeDirectories:
+  autoCodeRecursively(directory)
