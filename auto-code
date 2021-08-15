@@ -23,7 +23,7 @@ sPath = Path(__file__).resolve(True)
 mainDefaultPath = sPath.parent
 userDefaultPath = mainDefaultPath.parent
 
-sys.path += (mainDefaultPath, userDefaultPath)
+sys.path = [str(userDefaultPath), str(mainDefaultPath)] + sys.path
 defaultAutoCodeLocations += (mainDefaultPath, userDefaultPath)
 
 modelsLocations, templatesLocations = ac.findTemplatesAndModelsLocations(

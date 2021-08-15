@@ -76,12 +76,34 @@ class AutoCodeMetadata:
 
 
 def autoCode(modelPath, templatePath, filePath):
-  spec = importlib.util.spec_from_file_location('auto_code_model', modelPath)
-  model = importlib.util.module_from_spec(spec)
-  sys.modules['auto_code_model'] = model
-  spec.loader.exec_module(model)
+  # spec = importlib.util.spec_from_file_location(modelPath.stem, modelPath)
+  # raise Exception('******' + str(spec.parent))
+  # model = importlib.util.module_from_spec(spec)
+  # sys.modules[modelPath.stem] = model
+  # spec.loader.exec_module(model)
 
-  if hasattr(model, 'getData'): data = model.getData()
+  # packagePath = modelPath.parent
+  # packageName = packagePath.stem
+  # packageInitPath = packagePath / '__init__.py'
+  # spec = importlib.util.spec_from_file_location(
+  #   packageName,
+  #   packageInitPath,
+  #   submodule_search_locations=[packagePath],
+  # )
+  # package = importlib.util.module_from_spec(spec)
+  # # sys.path += (str(packagePath))
+  # sys.modules[packageName] = package
+  # spec.loader.exec_module(package)
+
+  sys.path.insert(0, str(modelPath.parent.parent))
+  # sys.path += (str(modelPath.parent.parent),)
+  moduleName = modelPath.stem
+  packageName = modelPath.parent.stem
+
+  model = importlib.import_module(f'.{moduleName}', packageName)
+
+  if hasattr(model, moduleName): data = getattr(model, moduleName)
+  elif hasattr(model, 'getData'): data = model.getData()
   else: data = model.data
 
   relpath = os.path.relpath
