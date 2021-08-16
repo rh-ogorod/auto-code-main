@@ -80,7 +80,7 @@ def autoCodeRecursively(directory):
                     if indentationStrCurrent:
                       if indentationStrCurrent != indentationStr:
                         raise RuntimeError(
-                          'auto-code group indentations do not match'
+                          'auto-code group indentations do not match',
                         )
                     else: indentationStrCurrent = indentationStr
 
@@ -95,11 +95,13 @@ def autoCodeRecursively(directory):
                     indentationStr = openMultiLineMatch.group(1)
                     if indentationStrCurrent != indentationStr:
                       raise RuntimeError(
-                        'auto-code group indentations do not match')
+                        'auto-code group indentations do not match',
+                      )
 
                     if not inOpenMultiLine:
                       raise RuntimeError(
-                        'Invalid auto-code multi-line open block.')
+                        'Invalid auto-code multi-line open block.',
+                      )
                     autoCodeCommandId = ' '.join(autoCodeCommand)
 
                   if not paramMatch and not openMultiLineMatch:
@@ -127,7 +129,8 @@ def autoCodeRecursively(directory):
                     indentationStr = closeSingleLineMatch.group(1)
                     if indentationStrCurrent != indentationStr:
                       raise RuntimeError(
-                        'auto-code group indentations do not match')
+                        'auto-code group indentations do not match',
+                      )
 
                     compProc = run(autoCodeCommand, stdout=PIPE)
                     if compProc.returncode != 0: exit(compProc.returncode)
