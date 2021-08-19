@@ -109,8 +109,11 @@ def autoCode(modelPath, templatePath, filePath):
   relpath = os.path.relpath
 
   data['_meta'] = AutoCodeMetadata({
+    # importlib can be used to import modules directly in mako files
     'importlib': importlib,
+    'templateName': templatePath.stem,
     'templatePath': templatePath,
+    'modelName': modelPath.stem,
     'modelPath': modelPath,
     'filePath': filePath,
     'templateRelPath': relpath(templatePath, filePath.parent),
