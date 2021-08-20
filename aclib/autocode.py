@@ -95,7 +95,8 @@ def autoCode(modelPath, templatePath, filePath):
   # sys.modules[packageName] = package
   # spec.loader.exec_module(package)
 
-  sys.path.insert(0, str(modelPath.parent.parent))
+  if str(modelPath.parent.parent) not in sys.path:
+    sys.path.insert(0, str(modelPath.parent.parent))
   # sys.path += (str(modelPath.parent.parent),)
   moduleName = modelPath.stem
   packageName = modelPath.parent.stem
