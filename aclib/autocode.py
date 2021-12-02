@@ -3,6 +3,7 @@
 import os
 import sys
 import importlib.util
+import importlib.resources
 
 # from mako.template import Template
 from mako.lookup import TemplateLookup
@@ -76,32 +77,16 @@ class AutoCodeMetadata:
 
 
 def autoCode(modelPath, templatePath, filePath):
-  # spec = importlib.util.spec_from_file_location(modelPath.stem, modelPath)
-  # raise Exception('******' + str(spec.parent))
-  # model = importlib.util.module_from_spec(spec)
-  # sys.modules[modelPath.stem] = model
-  # spec.loader.exec_module(model)
+  packagePath = modelPath.parent
+  packageName = packagePath.stem
+  packageInitPath = packagePath / '__init__.py'
+  spec = importlib.util.spec_from_file_location(packageName, packageInitPath)
+  package = importlib.util.module_from_spec(spec)
+  sys.modules[packageName] = package
+  spec.loader.exec_module(package)
 
-  # packagePath = modelPath.parent
-  # packageName = packagePath.stem
-  # packageInitPath = packagePath / '__init__.py'
-  # spec = importlib.util.spec_from_file_location(
-  #   packageName,
-  #   packageInitPath,
-  #   submodule_search_locations=[packagePath],
-  # )
-  # package = importlib.util.module_from_spec(spec)
-  # # sys.path += (str(packagePath))
-  # sys.modules[packageName] = package
-  # spec.loader.exec_module(package)
-
-  if str(modelPath.parent.parent) not in sys.path:
-    sys.path.insert(0, str(modelPath.parent.parent))
-  # sys.path += (str(modelPath.parent.parent),)
   moduleName = modelPath.stem
-  packageName = modelPath.parent.stem
-
-  model = importlib.import_module(f'.{moduleName}', packageName)
+  model = importlib.import_module(f'{packageName}.{moduleName}')
 
   if hasattr(model, moduleName): data = getattr(model, moduleName)
   elif hasattr(model, 'getData'): data = model.getData()
