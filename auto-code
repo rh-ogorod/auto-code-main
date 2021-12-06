@@ -46,6 +46,6 @@ if modelPath is None:
   raise RuntimeError(f'model "{modelName}" is not found')
 
 if templatePath is None:
-  raise RuntimeError(f'template "{modelName}" is not found')
+  raise RuntimeError(f'template "{templateName}" is not found')
 
 ac.autoCode(modelPath, templatePath, autoCoddedFilePath)
