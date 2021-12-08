@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 # Hey Emacs, this is -*- coding: utf-8; mode: python -*-
 
 from pathlib import Path
