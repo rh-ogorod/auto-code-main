@@ -2,7 +2,7 @@
 # Hey Emacs, this is -*- coding: utf-8; mode: python -*-
 
 import sys, os, io, re
-from subprocess import run, PIPE
+from subprocess import call, run, PIPE
 from os import path
 from pathlib import Path
 import importlib.util
@@ -41,6 +41,7 @@ autoCodeCloseRegex = r'^(\s*)[^\s]+\s*/a/}'
 
 
 def autoCodeRecursively(directory):
+  autoCoddedFiles = []
   for root, dirs, fileNames in os.walk(directory):
     for fileName in fileNames:
       if re.search(config.autoCodeFiles, fileName):
@@ -167,8 +168,37 @@ def autoCodeRecursively(directory):
               outf.write(fb.getvalue())
               outf.flush()
             os.replace(filePathTmp, filePath)
+            autoCoddedFiles.append(filePath)
             print(filePath)
+
+  return autoCoddedFiles
+
+
+def findPostprocessCommands(postprocessors, fileName):
+  for postprocessor in postprocessors:
+    if re.search(postprocessor['files'], fileName):
+      return postprocessor['commands']
+  return None
+
+
+def postprocess(autoCoddedFiles):
+  if not autoCoddedFiles: return
+
+  postprocessors =\
+    'postprocessors' in dir(config) and getattr(config, 'postprocessors')
+
+  if postprocessors:
+    os.chdir(config.projectPath)
+    for autoCoddedFile in autoCoddedFiles:
+      commands = findPostprocessCommands(postprocessors, autoCoddedFile)
+      if commands:
+        for command in commands:
+          commandFormated = command.format(file=autoCoddedFile)
+          print()
+          print(commandFormated)
+          call(commandFormated, shell=True)
 
 
 for directory in config.autoCodeDirectories:
-  autoCodeRecursively(directory)
+  autoCoddedFiles = autoCodeRecursively(directory)
+  postprocess(autoCoddedFiles)
