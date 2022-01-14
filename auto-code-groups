@@ -204,14 +204,6 @@ def postprocess(autoCoddedFiles):
     print(command)
     call(command, shell=True)
 
-  # for autoCoddedFile in autoCoddedFiles:
-  #   command = findPostprocessCommand(postprocessors, autoCoddedFile)
-  #   if command:
-  #     commandFormated = command.format(file=autoCoddedFile)
-  #     print()
-  #     print(commandFormated)
-  #     call(commandFormated, shell=True)
-
 
 for directory in config.autoCodeDirectories:
   autoCoddedFiles = autoCodeRecursively(directory)
