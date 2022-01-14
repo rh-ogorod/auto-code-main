@@ -174,11 +174,18 @@ def autoCodeRecursively(directory):
   return autoCoddedFiles
 
 
-def findPostprocessCommands(postprocessors, fileName):
+def getPostprocessCommands(postprocessors, autoCoddedFiles):
+  postprocessCommands = []
   for postprocessor in postprocessors:
-    if re.search(postprocessor['files'], fileName):
-      return postprocessor['commands']
-  return None
+    filesToPostprocess = []
+    for autoCoddedFile in autoCoddedFiles:
+      if re.search(postprocessor['files'], autoCoddedFile):
+        filesToPostprocess.append(autoCoddedFile)
+    if filesToPostprocess:
+      postprocessCommands.append(
+        postprocessor['command'].format(files=' '.join(filesToPostprocess))
+      )
+  return postprocessCommands
 
 
 def postprocess(autoCoddedFiles):
@@ -187,16 +194,23 @@ def postprocess(autoCoddedFiles):
   postprocessors =\
     'postprocessors' in dir(config) and getattr(config, 'postprocessors')
 
-  if postprocessors:
-    os.chdir(config.projectPath)
-    for autoCoddedFile in autoCoddedFiles:
-      commands = findPostprocessCommands(postprocessors, autoCoddedFile)
-      if commands:
-        for command in commands:
-          commandFormated = command.format(file=autoCoddedFile)
-          print()
-          print(commandFormated)
-          call(commandFormated, shell=True)
+  if not postprocessors: return
+
+  os.chdir(config.projectPath)
+  commands = getPostprocessCommands(postprocessors, autoCoddedFiles)
+
+  for command in commands:
+    print()
+    print(command)
+    call(command, shell=True)
+
+  # for autoCoddedFile in autoCoddedFiles:
+  #   command = findPostprocessCommand(postprocessors, autoCoddedFile)
+  #   if command:
+  #     commandFormated = command.format(file=autoCoddedFile)
+  #     print()
+  #     print(commandFormated)
+  #     call(commandFormated, shell=True)
 
 
 for directory in config.autoCodeDirectories:
