@@ -196,7 +196,7 @@ def postprocess(autoCoddedFiles):
 
   if not postprocessors: return
 
-  os.chdir(config.projectPath)
+  os.chdir(config.projectRootPath)
   commands = getPostprocessCommands(postprocessors, autoCoddedFiles)
 
   for command in commands:
