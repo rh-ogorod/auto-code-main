@@ -48,15 +48,20 @@ def autoCodeRecursively(directory):
         filePath = join(root, fileName)
         filePathTmp = filePath + '.auto-code'
         with io.StringIO() as fb:
-          with open(filePath, mode='r', encoding='utf8') as inpf:
-            fileChanged = False
-            indentationStrCurrent = None
-            autoCodeCommand = None
-            autoCodeCommandId = ''
-            lineNumber = 0
-            for line in inpf:
-              lineNumber += 1
-              try:
+          with open(
+            filePath, mode='r',
+            encoding='utf8',
+            errors='surrogateescape',
+          ) as inpf:
+            try:
+              fileChanged = False
+              indentationStrCurrent = None
+              autoCodeCommand = None
+              autoCodeCommandId = ''
+              lineNumber = 0
+              for line in inpf:
+                lineNumber += 1
+                # /b/{
                 if not autoCodeCommandId:
                   fb.write(line)
                   openSingleLineMatch = None
@@ -151,18 +156,24 @@ def autoCodeRecursively(directory):
                     indentationStrCurrent = None
                     autoCodeCommand = None
                     autoCodeCommandId = ''
-              except:
-                print(f'Error while processing:\n'
-                      f'  File: "{filePath}", line {lineNumber}\n'
-                      f'  Command: "{autoCodeCommandId}"',
-                      file=sys.stderr)
-                raise
-            if autoCodeCommandId:
-              print(f'Error while processing:\n'
-                    f'  File: "{filePath}", line {lineNumber}\n'
-                    f'  Command: "{autoCodeCommandId}"',
-                    file=sys.stderr)
-              raise RuntimeError('auto-code group "/a/{" not closed.')
+                # /b/}
+              if autoCodeCommandId:
+                print(
+                  'Error while processing:\n'
+                  f'  File: "{filePath}", line {lineNumber}\n'
+                  f'  Command: "{autoCodeCommandId}"',
+                  file=sys.stderr
+                )
+                raise RuntimeError('auto-code group "/a/{" not closed.')
+            except:
+              print(
+                'Error while processing:\n'
+                f'  File: "{filePath}", line {lineNumber}\n'
+                f'  Command: "{autoCodeCommandId}"',
+                file=sys.stderr
+              )
+              raise
+
           if fileChanged:
             with open(filePathTmp, mode='w', encoding='utf8') as outf:
               outf.write(fb.getvalue())
@@ -203,6 +214,7 @@ def postprocess(autoCoddedFiles):
     print()
     print(command)
     call(command, shell=True)
+    print()
 
 
 for directory in config.autoCodeDirectories:
