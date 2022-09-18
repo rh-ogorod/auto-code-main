@@ -44,7 +44,8 @@ def autoCodeRecursively(directory):
   autoCoddedFiles = []
   for root, dirs, fileNames in os.walk(directory):
     for fileName in fileNames:
-      if re.search(config.autoCodeFiles, fileName):
+      relativeFileName = str(Path(join(root, fileName)).relative_to(directory))
+      if re.search(config.autoCodeFiles, relativeFileName):
         filePath = join(root, fileName)
         filePathTmp = filePath + '.auto-code'
         with io.StringIO() as fb:
